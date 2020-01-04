@@ -1,5 +1,6 @@
 from pathlib import Path
 from limepy import download
+from limepy.wrangle import Survey, Question
 
 class Downloader(object):
     """
@@ -12,5 +13,37 @@ class Downloader(object):
         self.password = password
         self.userid = userid
         self.surveyid = surveyid
+
+
+    def download_data(self):
+        """
+        A method to download the data over the Lime Survey API.
+        :return str data: returns the raw data
+        """
+
+        data = download.get_responses(self.url,self.username, self.password, self.userid, self.surveyid)
+        return data
+
+    def write_data_as_csv(self, data, path):
+        """
+        A method to write out the data obtained.
+        :param str data: Data that should be written.
+        :param str path: Path to where the data should be written. (e.g. "Data.csv")
+        """
+
+        path = Path(path)
+        path.write_text(data)
+
+    def load_survey_structure(self, path):
+        """
+        Method to load the Lime Survey description file .lss
+        :param str path: Path to .lss file
+        :return str structure: Survey Structure
+        """
+        if not path.endswith('.lss'):
+            raise Exception("You need to specify the path to a lss file with the survey structure.")
+
+        my_structure = open(path).read()
+        return my_structure
 
 
