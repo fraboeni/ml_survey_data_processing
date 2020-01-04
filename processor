@@ -1,0 +1,54 @@
+from limepy.wrangle import Survey, Question
+from lxml.html.clean import Cleaner
+from lxml.html import fromstring
+import re
+from pathlib import Path
+from limepy import download
+
+class SurveyProcessor(object):
+    """
+    A general class to process Lime Survey surveys and bring them into a nice format for analyses.
+    """
+
+    def __init__(self, survey):
+        """
+        Initialization
+        :param Survey survey: An object holding the survey to be processed.
+        """
+        self.survey = survey
+
+
+    def filter_completed_questions(self, data_df, lastpage=39):
+        """
+        Function to keep only the data of completed surveys
+        :param DataFrame data_df: pandas DF that contains the survey response data
+        :param int lastpage: int that specifies what the last question in the survey is (in our it is 39,
+                therefor the default value)
+        :return DataFrame: A dataframe that contains only the completed results
+        """
+
+        # create a boolean mask to check whether the
+        is_completed = data_df['lastpage'] == lastpage
+
+        # use the boolean mask to filter the relevant rows in the dataframe
+        return data_df[is_completed]
+
+    def clean_question_text(self, text):
+        """
+        Function to remove all the javascript and formatting from the question text
+        :param str text: Text to be cleaned from formatting.
+        :return str result: Cleaned text.
+        """
+        cleaner = Cleaner(
+            comments=True,  # True = remove comments
+            meta=True,  # True = remove meta tags
+            scripts=True,  # True = remove script tags
+            embedded=True,  # True = remove embeded tags
+        )
+        clean_dom = cleaner.clean_html(text)
+        cleaner_text = fromstring(clean_dom).text_content()
+
+        # now remove all the \x\n etc. from text
+        result = cleaner_text.replace('\n', ' ').replace('\xa0', ' ')
+        return result
+
