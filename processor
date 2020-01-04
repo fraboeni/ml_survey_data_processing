@@ -1,6 +1,7 @@
 from limepy.wrangle import Survey, Question
 from lxml.html.clean import Cleaner
 from lxml.html import fromstring
+import pandas as pd
 import re
 from pathlib import Path
 from limepy import download
@@ -51,4 +52,71 @@ class SurveyProcessor(object):
         # now remove all the \x\n etc. from text
         result = cleaner_text.replace('\n', ' ').replace('\xa0', ' ')
         return result
+
+    def create_question_overview_df(self):
+        """
+        Method to create a dataframe that holds a mapping from every question code to
+        the corresponding question text and type
+        :return DataFrame: Mapping
+        """
+
+        questions = self.survey.questions
+
+        # create an empty lists to append the columns to
+        all_answer_columns = []
+        all_question_names = []
+        all_question_types = []
+        all_question_indices = []
+
+        # iterate over all questions, q holds the question ID in form of '1', '2', ...
+        for q in questions:
+
+            question_code = questions[q]['title']
+            question_text = self.clean_question_text(questions[q]['question'])
+            question_type = questions[q]['question_type']
+            question_index = questions[q]['qid']
+
+            # Process questions according to their type.
+            if question_type == "Multiple choice" or question_type == "Multiple choice with comments" or question_type == "Array":
+                # iterate over all subquestions (by the format of limepy, the subquestions section always has key '0')
+                for s in questions[q]['subquestions']['0']:
+                    sub_question_code = (s['title'])
+                    sub_question_text = self.clean_question_text(s['question'])
+
+                    merged_code = question_code + "[" + sub_question_code + "]"
+                    merged_text = question_text + " - " + sub_question_text
+                    all_answer_columns.append(merged_code)
+                    all_question_names.append(merged_text)
+                    all_question_types.append(question_type)
+                    all_question_indices.append(question_index)
+
+            # in Rankin the naming of the "subquestions" is slightly different and called "answer"
+            elif question_type == "Ranking":
+                # iterate over all possible answers (by the format of limepy,
+                # the subquestions section always has key '0')
+                for s in questions[q]['answers']['0']:
+                    sub_question_code = (s['sortorder'])
+                    sub_question_text = self.clean_question_text(s['answer'])
+
+                    merged_code = question_code + "[" + sub_question_code + "]"
+                    merged_text = question_text + " - " + sub_question_text
+                    all_answer_columns.append(merged_code)
+                    all_question_names.append(merged_text)
+                    all_question_types.append(question_type)
+                    all_question_indices.append(question_index)
+
+            # there is no subtype to be handled, like in normal text
+            # and the data can be appended directly
+            else:
+                all_answer_columns.append(question_code)
+                all_question_names.append(question_text)
+                all_question_types.append(question_type)
+                all_question_indices.append(question_index)
+
+        # Make the dataframe with the Question code as a header and text and type as rows
+        survey_answers_df = pd.DataFrame(list(zip(all_question_names, all_question_types, all_question_indices)),
+                                         index=all_answer_columns,
+                                         columns=['Question', 'Question Type', 'Lime Index']).T
+
+        return survey_answers_df
 
