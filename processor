@@ -1,10 +1,8 @@
-from limepy.wrangle import Survey, Question
-from lxml.html.clean import Cleaner
-from lxml.html import fromstring
 import pandas as pd
-import re
-from pathlib import Path
-from limepy import download
+from limepy.wrangle import Survey
+from lxml.html import fromstring
+from lxml.html.clean import Cleaner
+
 
 class SurveyProcessor(object):
     """
@@ -17,7 +15,6 @@ class SurveyProcessor(object):
         :param Survey survey: An object holding the survey to be processed.
         """
         self.survey = survey
-
 
     def filter_completed_questions(self, data_df, lastpage=39):
         """
@@ -120,3 +117,150 @@ class SurveyProcessor(object):
 
         return survey_answers_df
 
+    def convert_questions_to_df(self):
+        """
+         This creates "the database scheme" for the survey I made up.
+         It has 2 indices, the upper index is the question code as it falls out of Lime Survey (e.g. DEM1)
+         The second index refers to specific formats for the question.
+         We would like to have several formats (machine readable: int that can be read out
+         and put into libraries like seaborn directly, answer code: like it falls out of the survey, and
+         answer text, which is the according long text for the answer. This fastens the lookup for machine
+         readable and generated results to the real world-answers.
+         :return Dataframe: Empty dataframe that has a multi-index structure according to the survey
+         """
+
+        questions = self.survey.questions
+
+        # collect all dataframes; for every (sub)question a 2-index dataframe is created
+        # so that they can be merged at the end
+        frames = []
+
+        # iterate over all questions and treat them according to the question type
+        for q in questions:
+            question_code = questions[q]['title']
+            question_text = self.clean_question_text(questions[q]['question'])
+            question_type = questions[q]['question_type']
+
+            # if there is only one element to select (List radio or (List dropdown)
+            # create 3 columns: one for machine readable code (e.g. 1,..,n), one for answer code (e.g. A1,...An)
+            # and one for long text answer
+            if question_type == "List radio" or question_type == "List dropdown":
+
+                second_level_index = ["a_code", "a_text", "a"]
+                header = pd.MultiIndex.from_product([[question_code],
+                                                     second_level_index], names=['code', 'version'])
+
+                df = pd.DataFrame(columns=header)
+
+                # append the new cdataframe
+                frames.append(df)
+
+            # for Multiple choice questions append two columns per answer.
+            # a machine readable one (0/1 for no or yes) and one with the text of this subquestion
+            # the text field is not really necessary, however, it helps to have it in the row
+            # so we can extract it more easily during analyses
+            elif question_type == "Multiple choice":
+
+                # iterate over all subquestions (by the format of limepy, the subquestions section always has key '0')
+                for s in questions[q]['subquestions']['0']:
+                    sub_question_code = (s['title'])
+                    merged_code = question_code + "[" + sub_question_code + "]"
+
+                    second_level_index = ["a_text", "a"]
+                    header = pd.MultiIndex.from_product([[merged_code],
+                                                         second_level_index], names=['code', 'version'])
+                    df = pd.DataFrame(columns=header)
+
+                    # append the new cdataframe
+                    frames.append(df)
+
+            # if there is only one element to select (List radio or (List dropdown) + a comment
+            # create 4 columns: the 3 from list + an additional one for the comment
+            elif question_type == "List with comment":
+
+                second_level_index = ["a_code", "a_text", "a", question_code + "[comment]"]
+                header = pd.MultiIndex.from_product([[question_code],
+                                                     second_level_index],
+                                                    names=['code', 'version'])
+
+                df = pd.DataFrame(columns=header)
+
+                # append the new cdataframe
+                frames.append(df)
+
+            # for Multiple choice questions append three columns per answer.
+            # like Multiple choice + comment field
+            elif questions[q]['question_type'] == "Multiple choice with comments":
+
+                # iterate over all subquestions (by the format of limepy, the subquestions section always has key '0')
+                for s in questions[q]['subquestions']['0']:
+                    sub_question_code = (s['title'])
+                    merged_code = question_code + "[" + sub_question_code + "]"
+
+                    second_level_index = ["a_text", "a", question_code + "[" + sub_question_code + "comment]"]
+                    header = pd.MultiIndex.from_product([[merged_code],
+                                                         second_level_index], names=['code', 'version'])
+                    df = pd.DataFrame(columns=header)
+
+                    # append the new cdataframe
+                    frames.append(df)
+
+            # here we need 2 columns per possible answer (like multiple choice).
+            # One that contains the text.
+            # a second one that should be machine readable:
+            # Results of the participants are entered with integers. 1 shows highest priority, n lowest,
+            # 0 shows that it was not selected by the participant
+            elif questions[q]['question_type'] == "Ranking":
+
+                # iterate over all answers (by the format of limepy, the answers section always has key '0')
+                for a in questions[q]['answers']['0']:
+                    answer_code = a['sortorder']
+                    merged_code = question_code + "[" + answer_code + "]"
+
+                    second_level_index = ["a", "a_text"]
+                    header = pd.MultiIndex.from_product([[merged_code],
+                                                         second_level_index],
+                                                        names=['code', 'version'])
+                    df = pd.DataFrame(columns=header)
+
+                    # append the new cdataframe
+                    frames.append(df)
+
+            # each question in the array is to be treated like a normal list radio question and should therefore
+            # receive 3 columns
+            elif questions[q]['question_type'] == "Array":
+
+                second_level_index = ["a_code", "a_text", "a"]
+
+                # iterate over all subquestions (by the format of limepy, the subquestions section always has key '0')
+                for s in questions[q]['subquestions']['0']:
+                    sub_question_code = (s['title'])  # subquestion code
+                    merged_code = question_code + "[" + sub_question_code + "]"  # bring the codes together
+
+                    header = pd.MultiIndex.from_product([[merged_code],
+                                                         second_level_index], names=['code', 'version'])
+
+                    df = pd.DataFrame(columns=header)
+
+                    # append the new cdataframe
+                    frames.append(df)
+
+            # one column for the free text
+            elif questions[q]['question_type'] == "Long free text" or questions[q]['question_type'] == "Short free text":
+
+                second_level_index = ["a"]
+                header = pd.MultiIndex.from_product([[question_code],
+                                                     second_level_index], names=['code', 'version'])
+
+                df = pd.DataFrame(columns=header)
+
+                # append the new cdataframe
+                frames.append(df)
+
+            # Case for questions of which the type is not listed
+            else:
+                print("error, type not known ", questions[q]['question_type'])
+
+        # create an empty dataframe from all the individual ones
+        result = pd.concat(frames)
+        return result
