@@ -1,0 +1,16 @@
+from pathlib import Path
+from limepy import download
+
+class Downloader(object):
+    """
+    The downloader class serves as a method to access the limepy API
+    """
+
+    def __init__(self, url, username, password, userid, surveyid):
+        self.url = url
+        self.username = username
+        self.password = password
+        self.userid = userid
+        self.surveyid = surveyid
+
+
