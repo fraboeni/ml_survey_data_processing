@@ -7,12 +7,16 @@ class Downloader(object):
     The downloader class serves as a method to access the limepy API
     """
 
-    def __init__(self, url, username, password, userid, surveyid):
+    def __init__(self, url, username, password, userid, surveyid, lsspath):
         self.url = url
         self.username = username
         self.password = password
         self.userid = userid
         self.surveyid = surveyid
+
+        if not lsspath.endswith('.lss'):
+            raise Exception("You need to specify the path to a lss file with the survey structure.")
+        self.lsspath = lsspath # path to the lss file with survey structure
 
 
     def download_data(self):
@@ -34,16 +38,22 @@ class Downloader(object):
         path = Path(path)
         path.write_text(data)
 
-    def load_survey_structure(self, path):
+    def load_survey_structure(self):
         """
         Method to load the Lime Survey description file .lss
-        :param str path: Path to .lss file
         :return str structure: Survey Structure
         """
-        if not path.endswith('.lss'):
-            raise Exception("You need to specify the path to a lss file with the survey structure.")
 
-        my_structure = open(path).read()
+        my_structure = open(self.lsspath).read()
         return my_structure
 
+    def create_survey(self):
+        """
+        Method to create a survey object.
+        :return Survey survey: The survey object with all the data
+        """
+        data = self.download_data()
+        structure = self.load_survey_structure()
+
+        survey = Survey(data, structure)
 
