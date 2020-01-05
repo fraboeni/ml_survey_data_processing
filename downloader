@@ -56,3 +56,4 @@ class Downloader(object):
         structure = self.load_survey_structure()
 
         survey = Survey(data, structure)
+        return survey
