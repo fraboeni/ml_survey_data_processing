@@ -254,7 +254,7 @@ class SurveyProcessor(object):
 
                 df = pd.DataFrame(columns=header)
 
-                # append the new cdataframe
+                # append the new dataframe
                 frames.append(df)
 
             # Case for questions of which the type is not listed
@@ -263,4 +263,33 @@ class SurveyProcessor(object):
 
         # create an empty dataframe from all the individual ones
         result = pd.concat(frames)
+        return result
+
+class MLSurveyProcessor(SurveyProcessor):
+    """
+    Here we have a class for a concrete survey we are running.
+    The "database" scheme is adapted according to the real survey data.
+    Therefore, it uses the general structure + extra fields
+    """
+
+    def convert_questions_to_df(self):
+
+        # get the general structure
+        result = super().convert_questions_to_df()
+
+        # and add the concrete fields we need
+        # the metadata columns (from the front)
+        result.insert(0, "submitdate", [])
+        result.insert(0, "lastpage", [])
+        result.insert(0, "startlanguage", [])
+        result.insert(0, "seed", [])
+        result.insert(0, "startdate", [])
+        result.insert(0, "datestamp", [])
+        result.insert(0, "id", [])
+
+        # now add the 'other' fields to
+        result.insert(0, ('AWA2', 'AWA2[other]'), [])
+        result.insert(0, ('DEM3', 'DEM3[other]'), [])
+        result.insert(0, ('IMP3', 'IMP3[other]'), [])
+        result.insert(0, ('IMP3', 'IMP3[othercomment]'), [])
         return result
