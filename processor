@@ -50,6 +50,90 @@ class SurveyProcessor(object):
         result = cleaner_text.replace('\n', ' ').replace('\xa0', ' ')
         return result
 
+    def make_answer_code_to_text_mapping(self):
+        """
+        Method to generate a mapping from answer codes to answer texts
+        The form is the following:
+            For list questions (single choice):  key=AWA1, value = {A1:'hashdh',A2:'ahsjh',...}
+            For multiple choice: key=AWA2, value = {SQ001:'hfafhuhu',SQ002:'ahsuh',...}
+            For ranking: key=IMP5, value = {A1:'sdghuu',....}
+            For array: key=PRAtable, value = {A1:'faufh',....} --> we could have an individual quesion
+                in the array, however they all have the same answer possibilities, so it would be a
+                waste of space
+
+        :return dict of dict result: A dictionary with question codes as keys and dictionaries as values
+            that hold each answer codes as keys and the corresponding answer text as values
+        """
+        colnames = list(self.survey.dataframe.columns)
+
+        # this is the dict we return
+        mapping = {}
+
+        for qid, question in self.survey.questions.items():
+
+            # this is the dict for the single question with all answer possibilities
+            question_map = {}
+            if 'answers' in question:
+                for scale in question['answers']:
+                    for answer in question['answers'][scale]:
+                        question_map[answer['code']] = answer['answer']
+
+            elif 'subquestions' in question:  # in multiple choice and ranking
+                for scale in question['subquestions']:
+                    for sq in question['subquestions'][scale]:
+                        key = sq['title']
+                        question_map[key] = sq['question']
+            mapping[question['title']] = question_map
+        return mapping
+
+    def obtain_answer_text(self, q_code, mapping, a_code=[]):
+        """
+        Method to obtain the long answer text for an answer code in a specific question.
+        For ranking we have the shape IMP5[1] and need to lookup the answer code like IMP5[A1]
+        :param str q_code: code of the question
+        :param str a_code: answer code for which we want to receive the long text, it is not mandatory,
+            because in the multiple choice and ranking,
+            the answer code is already in the quetion code like in AWA[SQ001], it is SQ001
+        :param dict mapping: the dict with all the mappings we have created with make_answer_code_to_text_mapping()
+
+        :return str answertext: The text with the answer.
+        """
+
+        # the question code is either in the form AWA1, or AWA2[SQ001]
+        # so either we can query the mapping directly or we need to extract what is
+
+        # case extraction (multiple choice, ranking)
+        # for array
+        if '[' in q_code:
+            inner_part = q_code[q_code.find("[") + 1:q_code.find("]")]  # what is inside []
+            outer_part = q_code[:q_code.find("[")]  # what is before []
+            text = mapping[outer_part][inner_part]
+
+        # case just a plain form like 'AWA1' (list)
+        else:
+            text = mapping[q_code][a_code]
+
+        return text
+
+    def convert_answer_code_to_int(self, ans_code):
+        """
+        Method to convert the answer code into an integer. This is for machine readability.
+        A1 is translated to 1, SQ001 to 1 etc.
+        :param str ans_code: A string containing the answer code.
+
+        :return int: An integer representing the answer code.
+        """
+
+        if not isinstance(ans_code, str):
+            raise Exception('The answer code should be a string.')
+
+        # one type of multiple choice has also the form of Y for yes and empty for no....
+        if ans_code == 'Y':
+            return 1
+        else:
+            ans = re.sub(r"\D", "", ans_code)  # keep only digits
+        return int(ans)
+
     def create_question_overview_df(self):
         """
         Method to create a dataframe that holds a mapping from every question code to
