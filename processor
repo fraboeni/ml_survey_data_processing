@@ -1,3 +1,5 @@
+import re
+
 import pandas as pd
 from limepy.wrangle import Survey
 from lxml.html import fromstring
@@ -330,7 +332,8 @@ class SurveyProcessor(object):
                     frames.append(df)
 
             # one column for the free text
-            elif questions[q]['question_type'] == "Long free text" or questions[q]['question_type'] == "Short free text":
+            elif questions[q]['question_type'] == "Long free text" or questions[q][
+                'question_type'] == "Short free text":
 
                 second_level_index = ["a"]
                 header = pd.MultiIndex.from_product([[question_code],
@@ -349,6 +352,135 @@ class SurveyProcessor(object):
         result = pd.concat(frames)
         return result
 
+    def process_user_input(self, survey_df, completed_only=True, fill_na=True):
+        """
+            Take a survey and transform the responses to the pandas dataframe
+            :param DataFrane survey_df: Holds the scheme for the table in form of an empty DataFrame.
+            :param bool completed_only: If it is true, we only include users that have gone until the end
+            :param bool fill_na: If it is true, we fill the NaN values in the dataframe with 0
+           :return DataFrame: A filled version of the dataframe with the scheme specified in survey_df
+        """
+
+        # extract participant data and question data from survey object
+        data_df = self.survey.dataframe
+        questions_df = self.survey.questions
+
+        # make a copy to not harm the original object
+        survey_df_copy = survey_df.copy()
+
+        if completed_only:  # filter out all non completed surveys
+            data_df = self.filter_completed_questions(data_df)
+
+        # create the dictionary for mapping
+        mapping = self.make_answer_code_to_text_mapping()
+
+        # now iterate over all participants
+        for index, row in data_df.iterrows():
+
+            # for each participant, we hold an empty dict to be filled with values
+            participant_dict = {}
+            my_question_overview_df = self.create_question_overview_df(questions_df)
+
+            # and over every value that belongs to them
+            for columnName, columnData in row.iteritems():
+
+                # when there is no data, we do not need to make an etry
+                # pandas creates the nan values automatically when merging the
+                # dict into the dataframe
+                if pd.isna(columnData):
+                    pass  # do nothing for this datapoint, go directly to next
+
+                # if we have one of the 'other' columns, just write their value
+                elif 'other' in columnName:
+
+                    outer_part = columnName[:columnName.find("[")]  # what is before []
+                    inner_part = columnName
+                    index = (outer_part, inner_part)
+                    participant_dict[index] = columnData
+
+                # comment columns do not need a type lookup
+                # the text can directly be filled into the data
+                elif 'comment' in columnName:
+                    lookup_name = columnName.replace('comment', '').replace('[]', '')
+                    index = (lookup_name, columnName)
+                    participant_dict[index] = columnData
+
+                # normal column
+                else:
+
+                    # if we have the metadata columns just fill them as they come
+                    if columnName in ['submitdate', 'lastpage', 'startlanguage', 'seed', 'startdate', 'datestamp',
+                                      'id']:
+                        participant_dict[(columnName, '')] = columnData
+
+                    # if we still encounter a question type that we have not foreseen
+                    # raise exception - better to be safe than sorry
+                    elif columnName not in my_question_overview_df.keys():
+                        raise Exception('The column you are trying to enter seems not to fit.', columnName)
+
+                    # for specific question type
+                    else:
+                        # lookup the question type and behave accordingly
+                        question_type = my_question_overview_df[columnName]['Question Type']
+
+                        if question_type == "List radio" or question_type == "List dropdown" or question_type == "List with comment":
+
+                            # answer code
+                            participant_dict[(columnName, "a_code")] = columnData
+
+                            # respective text
+                            participant_dict[(columnName, "a_text")] = self.obtain_answer_text(columnName, mapping,
+                                                                                               columnData)
+
+                            # machine readable answer
+                            participant_dict[(columnName, "a")] = self.convert_answer_code_to_int(columnData)
+
+                        elif question_type == "Multiple choice" or question_type == "Multiple choice with comments":
+                            # here no answer code needed, because already in column name, e.g. AWA2[SQ001]
+                            participant_dict[(columnName, "a_text")] = self.obtain_answer_text(columnName, mapping)
+                            participant_dict[(columnName, "a")] = self.convert_answer_code_to_int(columnData)
+
+                        # ranking is a special type. column names have the form of IMP5[1] not IMP5[A1]
+                        # because they stand for IMP5[rank 1] has had the following answers
+                        elif question_type == "Ranking":
+                            # just send IMP as question_name
+                            outer_part = columnName[:columnName.find("[")]  # what is before [
+
+                            participant_dict[(columnName, "a_text")] = self.obtain_answer_text(outer_part, mapping,
+                                                                                               columnData)
+                            participant_dict[(columnName, "a")] = self.convert_answer_code_to_int(columnData)
+
+                        elif question_type == "Array":
+                            # answer code
+                            participant_dict[(columnName, "a_code")] = columnData
+
+                            # respective text
+                            outer_part = columnName[:columnName.find("[")]
+                            participant_dict[(columnName, "a_text")] = self.obtain_answer_text(outer_part, mapping,
+                                                                                          columnData)
+
+                            # machine readable answer
+                            participant_dict[(columnName, "a")] = self.convert_answer_code_to_int(columnData)
+
+                        elif question_type == "Long free text" or question_type == "Short free text":
+                            participant_dict[(columnName, 'a')] = columnData
+
+
+                        # Case for questions of which the type is not listed
+                        else:
+                            # print("error, type not known ", question_type)
+                            pass
+
+                            # print(question_type, columnName)
+
+
+            survey_df_copy = pd.concat([survey_df_copy, pd.DataFrame.from_records([participant_dict])])
+
+        # set the index to the participant ID in Lime Survey for better comparability
+        survey_df_copy = survey_df_copy.set_index('id')
+        return survey_df_copy
+
+
 class MLSurveyProcessor(SurveyProcessor):
     """
     Here we have a class for a concrete survey we are running.
@@ -357,7 +489,6 @@ class MLSurveyProcessor(SurveyProcessor):
     """
 
     def convert_questions_to_df(self):
-
         # get the general structure
         result = super().convert_questions_to_df()
 
