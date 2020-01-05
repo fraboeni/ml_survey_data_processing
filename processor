@@ -489,7 +489,7 @@ class MLSurveyProcessor(SurveyProcessor):
     """
 
     def convert_questions_to_df(self):
-        # get the general structure
+        # get the general structure from the parent class
         result = super().convert_questions_to_df()
 
         # and add the concrete fields we need
