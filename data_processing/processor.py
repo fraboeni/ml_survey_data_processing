@@ -33,9 +33,9 @@ class SurveyProcessor(object):
         # use the boolean mask to filter the relevant rows in the dataframe
         return data_df[is_completed]
 
-    def clean_question_text(self, text):
+    def clean_text(self, text):
         """
-        Function to remove all the javascript and formatting from the question text
+        Function to remove all the javascript and formatting from text
         :param str text: Text to be cleaned from formatting.
         :return str result: Cleaned text.
         """
@@ -114,7 +114,7 @@ class SurveyProcessor(object):
         # case just a plain form like 'AWA1' (list)
         else:
             text = mapping[q_code][a_code]
-
+        text = self.clean_text(text)
         return text
 
     def convert_answer_code_to_int(self, ans_code):
@@ -155,7 +155,7 @@ class SurveyProcessor(object):
         for q in questions:
 
             question_code = questions[q]['title']
-            question_text = self.clean_question_text(questions[q]['question'])
+            question_text = self.clean_text(questions[q]['question'])
             question_type = questions[q]['question_type']
             question_index = questions[q]['qid']
 
@@ -164,7 +164,7 @@ class SurveyProcessor(object):
                 # iterate over all subquestions (by the format of limepy, the subquestions section always has key '0')
                 for s in questions[q]['subquestions']['0']:
                     sub_question_code = (s['title'])
-                    sub_question_text = self.clean_question_text(s['question'])
+                    sub_question_text = self.clean_text(s['question'])
 
                     merged_code = question_code + "[" + sub_question_code + "]"
                     merged_text = question_text + " - " + sub_question_text
@@ -179,7 +179,7 @@ class SurveyProcessor(object):
                 # the subquestions section always has key '0')
                 for s in questions[q]['answers']['0']:
                     sub_question_code = (s['sortorder'])
-                    sub_question_text = self.clean_question_text(s['answer'])
+                    sub_question_text = self.clean_text(s['answer'])
 
                     merged_code = question_code + "[" + sub_question_code + "]"
                     merged_text = question_text + " - " + sub_question_text
@@ -224,7 +224,7 @@ class SurveyProcessor(object):
         # iterate over all questions and treat them according to the question type
         for q in questions:
             question_code = questions[q]['title']
-            question_text = self.clean_question_text(questions[q]['question'])
+            question_text = self.clean_text(questions[q]['question'])
             question_type = questions[q]['question_type']
 
             # if there is only one element to select (List radio or (List dropdown)
