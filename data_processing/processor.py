@@ -352,18 +352,17 @@ class SurveyProcessor(object):
         result = pd.concat(frames)
         return result
 
-    def process_user_input(self, survey_df, completed_only=True, fill_na=True):
+    def process_user_input(self, completed_only=True, fill_na=True):
         """
             Take a survey and transform the responses to the pandas dataframe
-            :param DataFrane survey_df: Holds the scheme for the table in form of an empty DataFrame.
             :param bool completed_only: If it is true, we only include users that have gone until the end
             :param bool fill_na: If it is true, we fill the NaN values in the dataframe with 0
            :return DataFrame: A filled version of the dataframe with the scheme specified in survey_df
         """
 
         # extract participant data and question data from survey object
+        survey_df = self.convert_questions_to_df() # Create the scheme for the table in form of an empty DataFrame
         data_df = self.survey.dataframe
-        questions_df = self.survey.questions
 
         # make a copy to not harm the original object
         survey_df_copy = survey_df.copy()
@@ -379,7 +378,7 @@ class SurveyProcessor(object):
 
             # for each participant, we hold an empty dict to be filled with values
             participant_dict = {}
-            my_question_overview_df = self.create_question_overview_df(questions_df)
+            my_question_overview_df = self.create_question_overview_df()
 
             # and over every value that belongs to them
             for columnName, columnData in row.iteritems():
