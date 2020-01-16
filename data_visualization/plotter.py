@@ -195,7 +195,7 @@ class Plotter():
         :param string x_name: name of the column to plot on the x-axis
         :param string y_name: name of the column to plot on the y-axis
         :param string title: Title of the plot
-       :param bool annot: If we want the lables written in the cells of the mosaic
+        :param bool annot: If we want the lables written in the cells of the mosaic
         :return: Axis
         """
         # helper funciont to make it possible to have no text inside the blocks
@@ -207,4 +207,38 @@ class Plotter():
             b, ax = mosaic(df, [x_name,y_name], labelizer=return_empty,label_rotation=[70,0])
         b.suptitle(title, fontsize=18)
         plt.xticks(rotation=70)
+        return ax
+
+    def make_boxplots(self, df, x_name, y_name, title="", x_axlabel="", y_axlabel="", x_labels=[], y_labels=[],
+                      labels_newline=True):
+        """
+        Method to create multiple boxplot for the two properties given for x and y
+        :param DataFrame df: contains the data to be plotted (so filtering should take place outside the method)
+                         the dataframe column names should contain the names specified in the following 2 params
+        :param string x_name: name of the column to plot on the x-axis
+        :param string y_name: name of the column to plot on as groups (each has a different color)
+        :param string title: Title of the plot
+        :param string x_axlabel: Subtitle of the x-axis
+        :param string y_axlabel: Subtitle of the y-axis
+        :param list of strings x_labels: The labels that should be displayed at the x axis (and their order through list order)
+        :param list of strings y_labels: The labels that should appear in the legend of the grouping
+        :param bool labels_newline: If the labels that we provide in x_labels or y_labels contain linebreaks
+        :return: Axis of plot
+        """
+        # if labels have a new line, we need to match them over the labels in the dataframe given
+        if labels_newline:
+            d1 = self.make_mapping_from_labels(x_labels)
+            d2 = self.make_mapping_from_labels(y_labels)
+            d = {**d1, **d2}
+            df = df.replace(d)
+
+        ax = sns.boxplot(x=x_name, y=y_name, data=df, whis=np.inf, order=x_labels).set_title(title, fontsize=18)
+        plt.xticks(rotation=70)
+        plt.yticks([i for i in range(0, len(y_labels))], y_labels)
+
+        # if user wants to set axis labels manually
+        if x_axlabel:
+            plt.xlabel(x_axlabel)
+        if y_axlabel:
+            plt.ylabel(y_axlabel)
         return ax
