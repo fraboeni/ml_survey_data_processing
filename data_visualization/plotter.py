@@ -130,7 +130,7 @@ class Plotter():
         :param list of strings y_labels: The labels that should appear in the legend of the grouping
         :param bool relative_frequencies: If we want to plot relative frequencies (otherwise total count)
         :param bool labels_newline: If the labels that we provide in x_labels or y_labels contain linebreaks
-        :return: Axis of plot
+        :return: Contingency table as a dataframe
         """
         # pandas crosstab function expects e.g. to get 2 arrays. Those should have same length.
         # If we want all possible combinations of e.g. [1,2] and [3,4,5], we need to bring it in the form of
@@ -155,8 +155,8 @@ class Plotter():
         df_empty.replace(df_empty, 0, inplace=True)  # create empfty cross tab
 
         if labels_newline:
-            d1 = make_mapping_from_labels(x_labels)
-            d2 = make_mapping_from_labels(y_labels)
+            d1 = self.make_mapping_from_labels(x_labels)
+            d2 = self.make_mapping_from_labels(y_labels)
             d = {**d1, **d2}
             df = df.replace(d)
 
@@ -175,4 +175,15 @@ class Plotter():
             df_new = df_new.div(df_new.sum(axis=1), axis=0)
 
         return df_new
+
+    def make_heatmap(self, df_cross, title="", annot=False):
+        """
+        This method gets a contingency table and plots it as a heatmap
+        :param DataFrame df_cross: A contingency table in form of a dataframe
+        :param string title: Title of the plot
+        :param bool annot: If we want the counts written in the cells of the heatmap
+        :return: plot axis
+        """
+        ax = sns.heatmap(df_cross, annot=annot).set_title(title, fontsize=18)
+        return ax
     
