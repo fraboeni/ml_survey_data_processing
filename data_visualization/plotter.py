@@ -47,6 +47,7 @@ class Plotter():
         :param list of strings labels: holds all possible answer texts for a question with line breaks as they fall
             out of the obtain_labels() function
         :return dict: with a mapping from normal text as key to text with linebreaks
+        :return: Axis of plot
         """
         dicc = {}
         for i in range(len(labels)):
@@ -59,12 +60,13 @@ class Plotter():
         """
         Method to create a countplot for the property of x_name
         :param DataFrame df: contains the data to be plotted (so filtering should take place outside the method)
-                         the dataframe column names should contain the names specified in the following 2 params
+                         the dataframe column names should contain the x_name
         :param string x_name: name of the column to plot on the x-axis
         :param string title: Title of the plot
         :param string x_axlabel: Subtitle of the x-axis
         :param list of strings x_labels: The labels that should be displayed at the x axis (and their order through list order)
         :param bool labels_newline: If the labels that we provide in x_labels or y_labels contain linebreaks
+        :return: Axis of plot
         """
         # if labels have a new line, we need to match them over the labels in the dataframe given
         if labels_newline:
@@ -95,6 +97,7 @@ class Plotter():
         :param list of strings x_labels: The labels that should be displayed at the x axis (and their order through list order)
         :param list of strings y_labels: The labels that should appear in the legend of the grouping
         :param bool labels_newline: If the labels that we provide in x_labels or y_labels contain linebreaks
+        :return: Axis of plot
         """
         # if labels have a new line, we need to match them over the labels in the dataframe given
         # otherwise, they are not put to the correct bin of the diagram (because the plotting function maps over names)
@@ -114,3 +117,62 @@ class Plotter():
         if y_axlabel:
             plt.ylabel(y_axlabel)
         return ax
+
+    def make_crosstable(self, df, x_name, y_name, x_labels, y_labels, relative_frequencies=False, labels_newline=True):
+        """
+        Function to create a crosstable plotting two properties of the data against each other.
+        Either the total count of elements is displayed or their relative frequency.
+        :param DataFrame df: contains the data to be plotted (so filtering should take place outside the method)
+                         the dataframe column names should contain the names specified in the following 2 params
+        :param string x_name: name of the column to plot on the x-axis
+        :param string y_name: name of the column to plot on the y-axis
+        :param list of strings x_labels: The labels that should be displayed at the x axis
+        :param list of strings y_labels: The labels that should appear in the legend of the grouping
+        :param bool relative_frequencies: If we want to plot relative frequencies (otherwise total count)
+        :param bool labels_newline: If the labels that we provide in x_labels or y_labels contain linebreaks
+        :return: Axis of plot
+        """
+        # pandas crosstab function expects e.g. to get 2 arrays. Those should have same length.
+        # If we want all possible combinations of e.g. [1,2] and [3,4,5], we need to bring it in the form of
+        # [1,1,1,2,2,2] --> for x_labels we do that
+        # [3,4,5,3,4,5] --> for y_labels we do that
+        repetitions = len(y_name)
+
+        # get from [a,b,c] to [a,a,a,b,b,b,c,c,c] if repetitions = 3 for example
+        new_labels = []
+        for label in x_labels:
+            for i in range(repetitions):
+                new_labels.append(label)
+        x_labels = new_labels
+        y_labels = len(x_labels) * y_labels
+
+        ser_x = pd.Series.from_array(x_labels)
+        ser_y = pd.Series.from_array(y_labels)
+
+        # make an empty crosstable containing all combinations listed above
+        # this is the "scheme" of out crosstable
+        df_empty = pd.crosstab(ser_x, ser_y, dropna=False)
+        df_empty.replace(df_empty, 0, inplace=True)  # create empfty cross tab
+
+        if labels_newline:
+            d1 = make_mapping_from_labels(x_labels)
+            d2 = make_mapping_from_labels(y_labels)
+            d = {**d1, **d2}
+            df = df.replace(d)
+
+        # now extract the series from the dataframe that contain the survey data
+        a = df[x_name]
+        b = df[y_name]
+
+        # also make a crosstable out of them, by default it will contain the counts
+        df_joint = pd.crosstab(a, b)
+
+        # now insert the one with the correct counts to the one with the correct schema
+        df_new = df_empty.add(df_joint, fill_value=0, axis='index')
+
+        if relative_frequencies:
+            # row relative frequency by division through sum of row/column
+            df_new = df_new.div(df_new.sum(axis=1), axis=0)
+
+        return df_new
+    
