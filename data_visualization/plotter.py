@@ -46,10 +46,45 @@ class Plotter():
         This dict can be used by pandas to replace the normal text by the formated text.
         :param list of strings labels: holds all possible answer texts for a question with line breaks as they fall
             out of the obtain_labels() function
-        :return dict: with a mapping from normal text as key to text with linebreaks 
+        :return dict: with a mapping from normal text as key to text with linebreaks
         """
         dicc = {}
         for i in range(len(labels)):
             stripped = labels[i].replace("\n"," ")
             dicc[stripped]=labels[i]
+
         return dicc
+
+    def make_grouped_countplot(self, df, x_name, y_name, title="", x_axlabel="", y_axlabel="", x_labels=[], y_labels=[],
+                               labels_newline=True):
+        """
+        Method to create a countplot for the two properties given for x and y
+        :param DataFrame df: contains the data to be plotted (so filtering should take place outside the method)
+                         the dataframe column names should contain the names specified in the following 2 params
+        :param string x_name: name of the column to plot on the x-axis
+        :param string y_name: name of the column to plot on as groups (each has a different color)
+        :param string title: Title of the plot
+        :param string x_axlabel: Subtitle of the x-axis
+        :param string y_axlabel: Subtitle of the y-axis
+        :param list of strings x_labels: The labels that should be displayed at the x axis (and their order through list order)
+        :param list of strings y_labels: The labels that should appear in the legend of the grouping
+        :param bool labels_newline: If the labels that we provide in x_labels or y_labels contain linebreaks
+        """
+        # if labels have a new line, we need to match them over the labels in the dataframe given
+        # otherwise, they are not put to the correct bin of the diagram (because the plotting function maps over names)
+        if labels_newline:
+            d1 = self.make_mapping_from_labels(x_labels)
+            d2 = self.make_mapping_from_labels(y_labels)
+            d = {**d1, **d2}
+            df = df.replace(d)
+
+        ax = sns.countplot(x=x_name, hue=y_name, data=df, order=x_labels, hue_order=y_labels).set_title(title,
+                                                                                                        fontsize=18)
+        plt.xticks(rotation=70)
+
+        # if user wants to set axis labels manually
+        if x_axlabel:
+            plt.xlabel(x_axlabel)
+        if y_axlabel:
+            plt.ylabel(y_axlabel)
+        return ax
