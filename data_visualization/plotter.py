@@ -39,3 +39,17 @@ class Plotter():
             labels = ['\n'.join(wrap(l, 20)) for l in labels]
 
         return labels
+
+    def make_mapping_from_labels(self, labels):
+        """
+        A method to create a dict with keys=answer text and value=answer text with \n after 20 char.
+        This dict can be used by pandas to replace the normal text by the formated text.
+        :param list of strings labels: holds all possible answer texts for a question with line breaks as they fall
+            out of the obtain_labels() function
+        :return dict: with a mapping from normal text as key to text with linebreaks 
+        """
+        dicc = {}
+        for i in range(len(labels)):
+            stripped = labels[i].replace("\n"," ")
+            dicc[stripped]=labels[i]
+        return dicc
