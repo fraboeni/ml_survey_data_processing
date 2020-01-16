@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+from statsmodels.graphics.mosaicplot import mosaic
 import numpy as np
 
 from textwrap import wrap
@@ -186,4 +187,24 @@ class Plotter():
         """
         ax = sns.heatmap(df_cross, annot=annot).set_title(title, fontsize=18)
         return ax
-    
+
+    def make_mosaic_plot(self, df, x_name, y_name, title="", annot=False):
+        """
+        :param DataFrame df: contains the data to be plotted (so filtering should take place outside the method)
+                         the dataframe column names should contain the names specified in the following 2 params
+        :param string x_name: name of the column to plot on the x-axis
+        :param string y_name: name of the column to plot on the y-axis
+        :param string title: Title of the plot
+       :param bool annot: If we want the lables written in the cells of the mosaic
+        :return: Axis
+        """
+        # helper funciont to make it possible to have no text inside the blocks
+        def return_empty(key):
+            return ''
+        if annot:
+            b, ax = mosaic(df, [x_name, y_name],label_rotation=[70,0])
+        else:
+            b, ax = mosaic(df, [x_name,y_name], labelizer=return_empty,label_rotation=[70,0])
+        b.suptitle(title, fontsize=18)
+        plt.xticks(rotation=70)
+        return ax
