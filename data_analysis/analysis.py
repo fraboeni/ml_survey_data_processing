@@ -39,3 +39,61 @@ def reorder_labels(labels, order):
     for i in range(len(order)):
         new_ordered_labels[i] = labels[order[i]]
     return new_ordered_labels
+
+def make_pandas_replacement_dict(new_ordered_labels):
+    """
+    Makes a dictionary with {text : int} mapping. The int is the index in the list of the element. We use that to assign
+        new values to pandas dataframes for analysis. This is because, if we reorder the labels, we cannot use the integer
+        in the 'a' column that we have anyways, so we need to create ourselves new integer lables in the correct order.
+    :param list of string new_ordered_labels: The answers (in new order) to a certain question
+    :return: Dictionary with mapping that pandas can use.
+    """
+    dicc = {}
+    for i in range(len(new_ordered_labels)):
+        dicc[new_ordered_labels[i]]=i
+    return dicc
+
+def calculate_spearman_corr(data1,data2):
+
+    # calculate spearman's correlation
+    coef, p = spearmanr(data1, data2)
+    print('Spearmans correlation coefficient: %.3f' % coef)
+    # interpret the significance
+    alpha = 0.05
+    if p > alpha:
+        print('Samples are uncorrelated (fail to reject H0) p=%.3f' % p)
+    else:
+        print('Samples are correlated (reject H0) p=%.3f' % p)
+
+def calculate_kendall_corr(data1,data2):
+    # calculate kendall's correlation
+    coef, p = kendalltau(data1, data2)
+    print('Kendall correlation coefficient: %.3f' % coef)
+    # interpret the significance
+    alpha = 0.05
+    if p > alpha:
+        print('Samples are uncorrelated (fail to reject H0) p=%.3f' % p)
+    else:
+        print('Samples are correlated (reject H0) p=%.3f' % p)
+
+def caluclate_mannwhitneyu(data1, data2):
+    # compare samples
+    stat, p = mannwhitneyu(data1, data2)
+    print('Statistics=%.3f, p=%.3f' % (stat, p))
+    # interpret
+    alpha = 0.05
+    if p > alpha:
+        print('Same distribution (fail to reject H0)')
+    else:
+        print('Different distribution (reject H0)')
+
+def calculate_kruskalwallis(data_arrays):
+    # compare samples --> generalization of mannwhitneyu test. For not only 2, but several samples
+    stat, p = kruskal(*data_arrays)
+    print('Statistics=%.3f, p=%.3f' % (stat, p))
+    # interpret
+    alpha = 0.05
+    if p > alpha:
+        print('Same distributions (fail to reject H0)')
+    else:
+        print('Different distributions (reject H0)')
