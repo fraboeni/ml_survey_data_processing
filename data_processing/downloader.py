@@ -32,12 +32,12 @@ class Downloader():
     def write_data_as_csv(self, data, path):
         """
         A method to write out the data obtained.
-        :param str data: Data that should be written.
+        :param DataFrame data: Data that should be written.
         :param str path: Path to where the data should be written. (e.g. "Data.csv")
         """
 
         path = Path(path)
-        pd.write_csv(data)
+        data.to_csv(path)
 
     def load_survey_structure(self):
         """
@@ -53,6 +53,7 @@ class Downloader():
         Method to create a survey object.
         :return Survey survey: The survey object with all the data
         """
+
         data = self.download_data()
         structure = self.load_survey_structure()
 

@@ -98,6 +98,22 @@ class SurveyProcessor(object):
             mapping[question['title']] = question_map
         return mapping
 
+    def make_answer_code_to_text_mapping_df(self, a_code=True):
+        """
+        Method to generate a mapping from answer codes to answer texts as a Dataframe
+        :param bool a_code: if we want answer codes (otherwise int)
+        :return: the datafrane with the mapping
+        """
+        mapping = self.make_answer_code_to_text_mapping(a_code)
+        # convert answer code mapping to dataframe to save it
+        reform = {(outerKey, innerKey): values for outerKey, innerDict in mapping.items() for innerKey, values in
+                  innerDict.items()}
+        header = pd.MultiIndex.from_tuples(reform,
+                                           names=['q_code', 'a_code'])
+
+        my_map_df = pd.DataFrame([reform], columns=header)
+        return  my_map_df
+
     def obtain_answer_text(self, q_code, mapping, a_code=[]):
         """
         Method to obtain the long answer text for an answer code in a specific question.
