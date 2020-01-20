@@ -76,7 +76,7 @@ def calculate_kendall_corr(data1,data2):
         print('Samples are correlated (reject H0) p=%.3f' % p)
 
 def caluclate_mannwhitneyu(data1, data2):
-    # compare samples
+    # compare samples: two data arrays
     stat, p = mannwhitneyu(data1, data2)
     print('Statistics=%.3f, p=%.3f' % (stat, p))
     # interpret
