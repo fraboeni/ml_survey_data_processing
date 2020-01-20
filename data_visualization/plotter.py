@@ -74,8 +74,7 @@ class Plotter():
             d1 = self.make_mapping_from_labels(x_labels)
             df = df.replace(d1)
 
-        ax = sns.countplot(x=x_name, data=df, order=x_labels).set_title('Awareness with respect to demographics',
-                                                                        fontsize=18)
+        ax = sns.countplot(x=x_name, data=df, order=x_labels).set_title(title, fontsize=18)
         plt.xticks(rotation=70)
 
         # if user wants to set axis labels manually
