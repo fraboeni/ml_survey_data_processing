@@ -52,7 +52,7 @@ class SurveyProcessor(object):
         result = cleaner_text.replace('\n', ' ').replace('\xa0', ' ')
         return result
 
-    def make_answer_code_to_text_mapping(self):
+    def make_answer_code_to_text_mapping(self, a_code=True):
         """
         Method to generate a mapping from answer codes to answer texts
         The form is the following:
@@ -62,7 +62,9 @@ class SurveyProcessor(object):
             For array: key=PRAtable, value = {A1:'faufh',....} --> we could have an individual quesion
                 in the array, however they all have the same answer possibilities, so it would be a
                 waste of space
-
+        :param bool a_code: Do we want a mapping {question_code: {answer_codes : Text}} ?
+            If false, the mapping is {question_code: {int : Text}} with the int being the integer included in the
+            answer code. This is sometimes easier for processing.
         :return dict of dict result: A dictionary with question codes as keys and dictionaries as values
             that hold each answer codes as keys and the corresponding answer text as values
         """
@@ -78,13 +80,21 @@ class SurveyProcessor(object):
             if 'answers' in question:
                 for scale in question['answers']:
                     for answer in question['answers'][scale]:
-                        question_map[answer['code']] = answer['answer']
+                        if a_code:
+                            question_map[answer['code']] = answer['answer']
+                        else:
+                            answer = self.convert_answer_code_to_int(answer['code'])
+                            question_map[answer] = answer['answer']
 
             elif 'subquestions' in question:  # in multiple choice and ranking
                 for scale in question['subquestions']:
                     for sq in question['subquestions'][scale]:
-                        key = sq['title']
-                        question_map[key] = sq['question']
+                        if a_code:
+                            key = sq['title']
+                            question_map[key] = sq['question']
+                        else:
+                            key = self.convert_answer_code_to_int(sq['title'])
+                            question_map[key] = sq['question']
             mapping[question['title']] = question_map
         return mapping
 
