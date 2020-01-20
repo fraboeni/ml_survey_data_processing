@@ -1,6 +1,6 @@
 from pathlib import Path
 from limepy import download
-from limepy.wrangle import Survey, Question
+from limepy.wrangle import Survey
 from io import StringIO
 import pandas as pd
 
@@ -37,7 +37,7 @@ class Downloader():
         """
 
         path = Path(path)
-        path.write_text(data)
+        pd.write_csv(data)
 
     def load_survey_structure(self):
         """
