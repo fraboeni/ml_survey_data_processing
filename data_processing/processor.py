@@ -83,8 +83,8 @@ class SurveyProcessor(object):
                         if a_code:
                             question_map[answer['code']] = answer['answer']
                         else:
-                            answer = self.convert_answer_code_to_int(answer['code'])
-                            question_map[answer] = answer['answer']
+                            key = self.convert_answer_code_to_int(answer['code'])
+                            question_map[key] = answer['answer']
 
             elif 'subquestions' in question:  # in multiple choice and ranking
                 for scale in question['subquestions']:
