@@ -54,7 +54,6 @@ def make_pandas_replacement_dict(new_ordered_labels):
     return dicc
 
 def calculate_spearman_corr(data1,data2):
-
     # calculate spearman's correlation
     coef, p = spearmanr(data1, data2)
     print('Spearmans correlation coefficient: %.3f' % coef)
