@@ -10,6 +10,8 @@ from scipy.stats import spearmanr
 from scipy.stats import kendalltau
 from scipy.stats import mannwhitneyu
 from scipy.stats import kruskal
+from scipy.stats import chi2_contingency
+from scipy.stats import chi2
 # seed random number generator
 seed(1)
 
@@ -96,3 +98,34 @@ def calculate_kruskalwallis(data_arrays):
         print('Same distributions (fail to reject H0)')
     else:
         print('Different distributions (reject H0)')
+
+def calculate_chi_square(contigency_table):
+    # contigency table should hold the frequencies
+
+    # convert it to numpy for value check
+    arr = np.asarray(contigency_table)
+
+    # check if all cell values are over 5
+    if len(arr[arr<5]) > 0:
+        print("For Chi-Square to make sense, the values in each cell need to be >=5!")
+    else:
+        stat, p, dof, expected = chi2_contingency(contigency_table)
+        print('dof=%d' % dof)
+        print('Expected frequency table '+expected)
+
+        # interpret test-statistic
+        prob = 0.95
+        critical = chi2.ppf(prob, dof)
+        print('probability=%.3f, critical=%.3f, stat=%.3f' % (prob, critical, stat))
+        if abs(stat) >= critical:
+            print('Dependent (reject H0)')
+        else:
+            print('Independent (fail to reject H0)')
+
+        # interpret p-value
+        alpha = 1.0 - prob
+        print('significance=%.3f, p=%.3f' % (alpha, p))
+        if p <= alpha:
+            print('Dependent (reject H0)')
+        else:
+            print('Independent (fail to reject H0)')
