@@ -50,8 +50,6 @@ class SurveyProcessor(object):
 
         # now remove all the \x\n etc. from text
         result = cleaner_text.replace('\n', ' ').replace('\xa0', ' ')
-        # additionally remove what is in the remaining < > tags
-        result = re.sub("[\<].*?[\>]", "", result)
         return result
 
     def make_answer_code_to_text_mapping(self, a_code=True):
@@ -83,20 +81,20 @@ class SurveyProcessor(object):
                 for scale in question['answers']:
                     for answer in question['answers'][scale]:
                         if a_code:
-                            question_map[answer['code']] = answer['answer']
+                            question_map[answer['code']] = self.clean_text(answer['answer'])
                         else:
                             key = self.convert_answer_code_to_int(answer['code'])
-                            question_map[key] = answer['answer']
+                            question_map[key] = self.clean_text(answer['answer'])
 
             elif 'subquestions' in question:  # in multiple choice and ranking
                 for scale in question['subquestions']:
                     for sq in question['subquestions'][scale]:
                         if a_code:
                             key = sq['title']
-                            question_map[key] = sq['question']
+                            question_map[key] = self.clean_text(sq['question'])
                         else:
                             key = self.convert_answer_code_to_int(sq['title'])
-                            question_map[key] = sq['question']
+                            question_map[key] = self.clean_text(sq['question'])
             mapping[question['title']] = question_map
         return mapping
 
