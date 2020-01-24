@@ -17,15 +17,18 @@ class SurveyProcessor(object):
         :param Survey survey: An object holding the survey to be processed.
         """
         self.survey = survey
+        self.num_questions = self.survey.question_list.shape[0]
 
-    def filter_completed_questions(self, data_df, lastpage=39):
+    def filter_completed_questions(self, data_df, lastpage=-1):
         """
         Function to keep only the data of completed surveys
         :param DataFrame data_df: pandas DF that contains the survey response data
-        :param int lastpage: int that specifies what the last question in the survey is (in our it is 39,
-                therefor the default value)
+        :param int lastpage: int that specifies what the last question in the survey is
+            Default -1 is an invalid value, in which case we use the total count of questions
         :return DataFrame: A dataframe that contains only the completed results
         """
+        if lastpage == -1:
+            lastpage = self.num_questions
 
         # create a boolean mask to check whether the
         is_completed = data_df['lastpage'] == lastpage
