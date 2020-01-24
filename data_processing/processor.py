@@ -50,6 +50,8 @@ class SurveyProcessor(object):
 
         # now remove all the \x\n etc. from text
         result = cleaner_text.replace('\n', ' ').replace('\xa0', ' ')
+        # additionally remove what is in the remaining < > tags
+        result = re.sub("[\<].*?[\>]", "", result)
         return result
 
     def make_answer_code_to_text_mapping(self, a_code=True):
@@ -140,7 +142,10 @@ class SurveyProcessor(object):
         # case just a plain form like 'AWA1' (list)
         else:
             text = mapping[q_code][a_code]
+
+        # clean that text from html formatting
         text = self.clean_text(text)
+
         return text
 
     def convert_answer_code_to_int(self, ans_code):
