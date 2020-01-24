@@ -124,7 +124,7 @@ class SurveyProcessor(object):
         :param str q_code: code of the question
         :param str a_code: answer code for which we want to receive the long text, it is not mandatory,
             because in the multiple choice and ranking,
-            the answer code is already in the quetion code like in AWA[SQ001], it is SQ001
+            the answer code is already in the question code like in AWA[SQ001], it is SQ001
         :param dict mapping: the dict with all the mappings we have created with make_answer_code_to_text_mapping()
 
         :return str answertext: The text with the answer.
@@ -142,7 +142,10 @@ class SurveyProcessor(object):
 
         # case just a plain form like 'AWA1' (list)
         else:
-            text = mapping[q_code][a_code]
+            if a_code == '-oth-':
+                text = 'other'
+            else:
+                text = mapping[q_code][a_code]
 
         # clean that text from html formatting
         text = self.clean_text(text)
@@ -164,6 +167,8 @@ class SurveyProcessor(object):
         # one type of multiple choice has also the form of Y for yes and empty for no....
         if ans_code == 'Y':
             return 1
+        elif ans_code == '-oth-':
+            return -1
         else:
             ans = re.sub(r"\D", "", ans_code)  # keep only digits
         return int(ans)
