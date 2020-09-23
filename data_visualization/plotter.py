@@ -57,7 +57,7 @@ class Plotter():
 
         return dicc
 
-    def make_countplot(self, df, x_name, title="", x_axlabel="", x_labels=[], labels_newline=True,ax=None):
+    def make_countplot(self, df, x_name, title="", x_axlabel="", x_labels=[], labels_newline=True, ax=None):
         """
         Method to create a countplot for the property of x_name
         :param DataFrame df: contains the data to be plotted (so filtering should take place outside the method)
@@ -77,7 +77,7 @@ class Plotter():
         if not x_labels:
             ax = sns.countplot(x=x_name, data=df, ax=ax).set_title(title, fontsize=18)
         else:
-            ax = sns.countplot(x=x_name, data=df, order=x_labels,ax=ax).set_title(title, fontsize=18)
+            ax = sns.countplot(x=x_name, data=df, order=x_labels, ax=ax).set_title(title, fontsize=18)
         plt.xticks(rotation=70)
 
         # if user wants to set axis labels manually
@@ -87,7 +87,7 @@ class Plotter():
         return ax
 
     def make_grouped_countplot(self, df, x_name, y_name, title="", x_axlabel="", y_axlabel="", x_labels=[], y_labels=[],
-                               labels_newline=True):
+                               labels_newline=True,ax=None):
         """
         Method to create a countplot for the two properties given for x and y
         :param DataFrame df: contains the data to be plotted (so filtering should take place outside the method)
@@ -110,7 +110,7 @@ class Plotter():
             d = {**d1, **d2}
             df = df.replace(d)
 
-        ax = sns.countplot(x=x_name, hue=y_name, data=df, order=x_labels, hue_order=y_labels).set_title(title,
+        ax = sns.countplot(x=x_name, hue=y_name, data=df, order=x_labels, hue_order=y_labels, ax=ax).set_title(title,
                                                                                                         fontsize=18)
         plt.xticks(rotation=70)
 
