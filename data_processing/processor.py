@@ -446,7 +446,7 @@ class SurveyProcessor(object):
 
                     # if we have the metadata columns just fill them as they come
                     if columnName in ['submitdate', 'lastpage', 'startlanguage', 'seed', 'startdate', 'datestamp',
-                                      'id']:
+                                      'id', 'refurl']:
                         participant_dict[(columnName, '')] = columnData
 
                     # if we still encounter a question type that we have not foreseen
@@ -537,10 +537,17 @@ class MLSurveyProcessor(SurveyProcessor):
         result.insert(0, "startdate", [])
         result.insert(0, "datestamp", [])
         result.insert(0, "id", [])
+        result.insert(0, "refurl", [])
 
         # now add the 'other' fields to
-        result.insert(0, ('AWA2', 'AWA2[other]'), [])
+        # result.insert(0, ('AWA2', 'AWA2[other]'), [])
+        # result.insert(0, ('DEM3', 'DEM3[other]'), [])
+        # result.insert(0, ('IMP3', 'IMP3[other]'), [])
+        # result.insert(0, ('IMP3', 'IMP3[othercomment]'), [])
         result.insert(0, ('DEM3', 'DEM3[other]'), [])
+        result.insert(0, ('DEM8', 'DEM8[other]'), [])
+        result.insert(0, ('DEM11', 'DEM11[other]'), [])
         result.insert(0, ('IMP3', 'IMP3[other]'), [])
-        result.insert(0, ('IMP3', 'IMP3[othercomment]'), [])
+        result.insert(0, ('IMP6', 'IMP6[other]'), [])
+        result.insert(0, ('AWA2', 'AWA2[other]'), [])
         return result
