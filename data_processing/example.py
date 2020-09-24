@@ -14,3 +14,4 @@ survey = loader.create_survey()
 
 processor = MLSurveyProcessor(survey)
 user_output = processor.process_user_input()
+answer_mapping_df = processor.make_answer_code_to_text_mapping_df() # false: for int mapping
