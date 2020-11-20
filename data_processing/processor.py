@@ -30,11 +30,25 @@ class SurveyProcessor(object):
         if lastpage == -1:
             lastpage = self.num_questions
 
-        # create a boolean mask to check whether the
+        # create a boolean mask to check whether the last question answered by the participant corresponds to the number of questions
         is_completed = data_df['lastpage'] == lastpage
 
         # use the boolean mask to filter the relevant rows in the dataframe
         return data_df[is_completed]
+
+    def filter_by_last_page(self, data_df, lastpage):
+        """
+            Function to keep only the data of answers that go to at least a certain question number
+            :param DataFrame data_df: pandas DF that contains the survey response data
+            :param int lastpage: int that specifies until what question we want to consider
+            :return DataFrame: A dataframe that contains only the filtered results
+        """
+        # create a boolean mask to check whether the last question answered by the participant is higher-equal
+        # than the question specified
+        reaches_question = data_df['lastpage'] >= lastpage
+
+        # use the boolean mask to filter the relevant rows in the dataframe
+        return data_df[reaches_question]
 
     def clean_text(self, text):
         """
@@ -389,10 +403,12 @@ class SurveyProcessor(object):
         result = pd.concat(frames)
         return result
 
-    def process_user_input(self, completed_only=True, fill_na=True):
+    def process_user_input(self, completed_only=True, at_least_answer=None, fill_na=True):
         """
             Take a survey and transform the responses to the pandas dataframe
             :param bool completed_only: If it is true, we only include users that have gone until the end
+            :param int at_least_answer: If an int is specified, all participants that have answered to at least this
+            question (but maybe not until the end) are included. To specify it, completed_only must be False
             :param bool fill_na: If it is true, we fill the NaN values in the dataframe with 0
            :return DataFrame: A filled version of the dataframe with the scheme specified in survey_df
         """
@@ -406,6 +422,9 @@ class SurveyProcessor(object):
 
         if completed_only:  # filter out all non completed surveys
             data_df = self.filter_completed_questions(data_df)
+
+        elif at_least_answer: # check that at_least_answer is set and not None
+            data_df = self.filter_by_last_page(data_df, lastpage=at_least_answer)
 
         # create the dictionary for mapping
         mapping = self.make_answer_code_to_text_mapping()
